@@ -5,13 +5,9 @@ import ragServices from './services/rag.js'
 import express from 'express';
 import path from 'path';
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import fs from "fs";
 import dotenv from 'dotenv'
 
 dotenv.config()
-const genAI = new GoogleGenerativeAI(process.env.API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
 const app = express();
 const port = 3000;
 
@@ -44,16 +40,9 @@ app.get('/deepseek', async (req, res) => {
 });
 
 app.get('/gemini', async (req, res) => {
-    const prompt = "Does this look store-bought or homemade?";
-    const image = {
-      inlineData: {
-        data: Buffer.from(fs.readFileSync("images/cookies.png")).toString("base64"),
-        mimeType: "image/png",
-      },
-    };
-    
-    const result = await model.generateContent([prompt, image]);
-    console.log(result.response.text());
+    const prompt = req.body.prompt;
+    const result = await ragServices.prompt(prompt);
+    res.status(200).json({result:result.text()});
 })
 
 app.get('/gemini/rag', async (req, res) => {
@@ -74,8 +63,9 @@ app.get('/gemini/rag', async (req, res) => {
 
   const finalAnswer = await ragServices.synthesizeFinalAnswer(responses);
   console.log("================Final Synthesized answer============");
-  console.log(finalAnswer.text);
+  console.log(finalAnswer.text());
   console.log("============================");
+  res.status(200).json({result: finalAnswer.text()});
 })
 
 app.listen(port, () => {

@@ -4,7 +4,21 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const apiKey = 'AIzaSyCeKINa1zVz9pplTelidaeJypaeYzi0Fk8'
 const genAI = new GoogleGenerativeAI(apiKey);
 
+const model = genAI.getGenerativeModel({ 
+    model: "gemini-2.0-flash-thinking-exp-01-21"
+}); // Use getGenerativeModel
+
 const ragServices = {
+    prompt: async (userPrompt) => {
+        const prompt = {
+            "contents":
+            [{"parts":[
+                {"text":userPrompt},
+            ]}
+        ]}
+        const response = await model.generateContent(prompt); // Use the model instance
+        return response.response; // Access the response correctly
+    },
     analyzeDocument: async (pdfPath, query) => {
         const researcherPrompt = `
             You are an elite researcher and subject matter expert with advanced analytical skills. Your expertise lies in carefully scrutinized comprehensive documents and synthesizing clear evidence-based answers.
@@ -27,31 +41,36 @@ const ragServices = {
             Provide the document title and a final answer that is based solely on the content of the document, meeting all the task descriptions requirements.
         `
         try {
-            const pdfBuffer = fs.readFileSync(pdfPath);
+            let pdfBuffer = fs.readFileSync(pdfPath);
             const pdfBase64 = pdfBuffer.toString('base64');
 
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-thinking-exp-01-21" }); // Use getGenerativeModel
-
+            console.log("Base64 (primeiros 100):", pdfBase64.substring(0, 100));
+            console.log("Base64 (últimos 100):", pdfBase64.substring(pdfBase64.length - 100));
+            console.log("Tamanho da Base64:", pdfBase64.length);
             const prompt = {
+                "contents":
+                [{"parts":[
+                    {"text":researcherPrompt},
+                    {"inline_data":{"mime_type":"application/pdf","data":pdfBase64}}
+                ]}
+            ]}
+
+            /*const prompt = {
                 contents: [
                     {
-                        parts: [ // Use "parts" array here
+                        parts: [ //
                             {
-                                "mime_type": "application/pdf",
-                                "data": pdfBase64
-                            }
-                        ]
-                    },
-                    {
-                        parts: [
+                                mime_type: "application/pdf",
+                                data: pdfBase64
+                            },
                             {
-                                "text": query
+                                text: researcherPrompt
                             }
                         ]
                     }
                 ]
-            };
-
+            };*/
+            console.log("JSON Payload:", JSON.stringify(prompt, null, 2));
             const response = await model.generateContent(prompt); // Use the model instance
 
             return response.response; // Access the response correctly
@@ -64,7 +83,7 @@ const ragServices = {
 
     synthesizeFinalAnswer: async (responses) => {
         const combinedContext = responses.map((resp, idx) => 
-            `Document ${idx + 1}:\nIndividual_Final_Answer: ${resp.text}`
+            `Document ${idx + 1}:\nIndividual_Final_Answer: ${(resp.text())}`
         ).join('\n');
 
         const finalPrompt = `
@@ -80,12 +99,12 @@ const ragServices = {
             Provide a final synthesized answer concisely:
         `
         try {
-            const model = genAI.model("gemini-2.0-flash-thinking-exp-01-21");
             const prompt = {
-                contents: [{
-                    text: finalPrompt
-                }]
-            };
+                "contents":
+                [{"parts":[
+                    {"text":finalPrompt}
+                ]}
+            ]}
             const response = await model.generateContent(prompt);
             return response.response;
         } catch (error) {
