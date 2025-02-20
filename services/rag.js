@@ -16,10 +16,11 @@ const ragServices = {
                 {"text":userPrompt},
             ]}
         ]}
-        const response = await model.generateContent(prompt); // Use the model instance
+        const response = await model.generateContent(prompt, { timeout: 600000 }); // Use the model instance
         return response.response; // Access the response correctly
     },
     analyzeDocument: async (pdfPath, query) => {
+        try {
         const researcherPrompt = `
             You are an elite researcher and subject matter expert with advanced analytical skills. Your expertise lies in carefully scrutinized comprehensive documents and synthesizing clear evidence-based answers.
 
@@ -40,13 +41,9 @@ const ragServices = {
 
             Provide the document title and a final answer that is based solely on the content of the document, meeting all the task descriptions requirements.
         `
-        try {
-            let pdfBuffer = fs.readFileSync(pdfPath);
-            const pdfBase64 = pdfBuffer.toString('base64');
+            let pdfBuffer = await fs.readFileSync(pdfPath);
+            const pdfBase64 = await pdfBuffer.toString('base64');
 
-            console.log("Base64 (primeiros 100):", pdfBase64.substring(0, 100));
-            console.log("Base64 (últimos 100):", pdfBase64.substring(pdfBase64.length - 100));
-            console.log("Tamanho da Base64:", pdfBase64.length);
             const prompt = {
                 "contents":
                 [{"parts":[
@@ -70,7 +67,7 @@ const ragServices = {
                     }
                 ]
             };*/
-            console.log("JSON Payload:", JSON.stringify(prompt, null, 2));
+
             const response = await model.generateContent(prompt); // Use the model instance
 
             return response.response; // Access the response correctly
