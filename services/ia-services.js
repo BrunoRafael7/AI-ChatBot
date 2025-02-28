@@ -8,8 +8,8 @@ const model = genAI.getGenerativeModel({
     model: "gemini-2.0-flash-thinking-exp-01-21"
 }); // Use getGenerativeModel
 
-const ragServices = {
-    prompt: async (userPrompt) => {
+class IaServices {
+    async prompt (userPrompt) {
         const prompt = {
             "contents":
             [{"parts":[
@@ -18,8 +18,9 @@ const ragServices = {
         ]}
         const response = await model.generateContent(prompt, { timeout: 600000 }); // Use the model instance
         return response.response; // Access the response correctly
-    },
-    analyzeDocument: async (pdfPath, query) => {
+    }
+
+    async analyzeDocument (pdfPath, query) {
         try {
         const researcherPrompt = `
             You are an elite researcher and subject matter expert with advanced analytical skills. Your expertise lies in carefully scrutinized comprehensive documents and synthesizing clear evidence-based answers.
@@ -52,22 +53,6 @@ const ragServices = {
                 ]}
             ]}
 
-            /*const prompt = {
-                contents: [
-                    {
-                        parts: [ //
-                            {
-                                mime_type: "application/pdf",
-                                data: pdfBase64
-                            },
-                            {
-                                text: researcherPrompt
-                            }
-                        ]
-                    }
-                ]
-            };*/
-
             const response = await model.generateContent(prompt); // Use the model instance
 
             return response.response; // Access the response correctly
@@ -76,9 +61,9 @@ const ragServices = {
             console.error('Error analyzing document:', error);
             throw error;
         }
-    },
+    }
 
-    synthesizeFinalAnswer: async (responses) => {
+    async synthesizeFinalAnswer (responses) {
         const combinedContext = responses.map((resp, idx) => 
             `Document ${idx + 1}:\nIndividual_Final_Answer: ${(resp.text())}`
         ).join('\n');
@@ -111,4 +96,4 @@ const ragServices = {
     }
 };
 
-export default ragServices;
+export default IaServices;

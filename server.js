@@ -1,6 +1,6 @@
 import deepseek from './services/deepseek.js'
-import pdfService from './services/pdfManager.js'
-import ragServices from './services/rag.js'
+import pdfService from './services/data-manager-service.js'
+import iaService from './services/ia-services.js'
 
 import express from 'express';
 import path from 'path';
@@ -40,20 +40,27 @@ app.get('/deepseek', async (req, res) => {
 
 app.get('/gemini', async (req, res) => {
     const prompt = req.body.prompt;
-    const result = await ragServices.prompt(prompt);
+    const result = await iaService.prompt(prompt);
     res.status(200).json({result:result.text()});
+})
+
+app.get('/resume/files', async (req, res) => {
+  // Caminho do arquivo PDF
+  const filePath = './training/big_files/livro_parte_1.pdf';
+  pdfService(filePath);
+  res.status(200).json({message: 'Fim'});
 })
 
 app.get('/gemini/rag', async (req, res) => {
   try {
     const docs = [
-      path.join(__dirname, 'training/CARDIO_1.pdf'),
+      path.join(__dirname, 'training/resumed_files/CARDIO_1.pdf'),
       //path.join(__dirname, 'training/05_0028_M.pdf')
     ];
     const userPrompt = req.body.prompt;
 
     // Lança tarefas assíncronas para analisar cada documento em paralelo
-    const responses = await Promise.all(docs.map(doc => ragServices.analyzeDocument(doc, userPrompt)));
+    const responses = await Promise.all(docs.map(doc => iaService.analyzeDocument(doc, userPrompt)));
 
     responses.forEach((response, idx) => {
         console.log(`Document ${idx + 1}:`);
@@ -61,7 +68,7 @@ app.get('/gemini/rag', async (req, res) => {
         console.log("===============");
     });
 
-    const finalAnswer = await ragServices.synthesizeFinalAnswer(responses);
+    const finalAnswer = await iaService.synthesizeFinalAnswer(responses);
     console.log("================Final Synthesized answer============");
     console.log(finalAnswer.text());
     console.log("============================");
